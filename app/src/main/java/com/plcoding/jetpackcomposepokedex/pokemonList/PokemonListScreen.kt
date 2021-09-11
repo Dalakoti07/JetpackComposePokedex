@@ -1,5 +1,6 @@
 package com.plcoding.jetpackcomposepokedex.pokemonList
 
+import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,11 +31,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import coil.ImageLoader
 import coil.request.ImageRequest
+import coil.request.SuccessResult
 import com.google.accompanist.coil.rememberCoilPainter
 import com.plcoding.jetpackcomposepokedex.R
 import com.plcoding.jetpackcomposepokedex.data.models.PokedexListEntry
 import com.plcoding.jetpackcomposepokedex.ui.theme.RobotoCondensed
+import kotlinx.coroutines.launch
 
 private const val TAG = "PokemonListScreen"
 
@@ -148,7 +152,10 @@ fun PokedexEntry(
     var dominantColor by remember {
         mutableStateOf(defaultDominantColor)
     }
-
+    //https://stackoverflow.com/questions/68094647/in-compose-how-to-access-drawable-once-coil-loads-image-from-url
+    var isLoadingImage by remember {
+        mutableStateOf(true)
+    }
     Box(
         contentAlignment = Center,
         modifier = modifier
@@ -172,17 +179,30 @@ fun PokedexEntry(
         Column {
             Box {
                 val context = LocalContext.current
-                //val imageLoader = ImageLoader(context = context)
+                val imageLoader = ImageLoader(context = context)
+                val imageRequest = ImageRequest
+                    .Builder(context)
+                    .data(entry.imageUrl).build()
+
+                val imagePainter = rememberCoilPainter(
+                    request = imageRequest,
+                    imageLoader = imageLoader
+                )
+                LaunchedEffect(key1 = imagePainter) {
+                    launch {
+                        val result = (imageLoader.execute(imageRequest) as SuccessResult).drawable
+                        val bitmap = (result as BitmapDrawable).bitmap
+                        // do something with vibrant color
+                        viewModel.calculateDominantColor(
+                            BitmapDrawable(context.resources, bitmap)
+                        ) { color ->
+                            dominantColor = color
+                        }
+                    }
+                }
                 Image(
                     painter = rememberCoilPainter(
-                        request = ImageRequest
-                            .Builder(context)
-                            .data(entry.imageUrl)
-                            .target {
-                                viewModel.calculateDominantColor(it) { color ->
-                                    dominantColor = color
-                                }
-                            }.build(),
+                        request = imageRequest,
                     ),
                     contentDescription = entry.pokemonName,
                     modifier = Modifier
