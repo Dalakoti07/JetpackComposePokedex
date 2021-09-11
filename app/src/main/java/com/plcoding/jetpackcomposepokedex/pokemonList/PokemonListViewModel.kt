@@ -13,6 +13,7 @@ import com.plcoding.jetpackcomposepokedex.data.models.PokedexListEntry
 import com.plcoding.jetpackcomposepokedex.utils.Constants.PAGE_SIZE
 import com.plcoding.jetpackcomposepokedex.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.*
 import javax.inject.Inject
@@ -23,10 +24,12 @@ class PokemonListViewModel @Inject constructor(private val repository: PokemonRe
 
     private var currentPage = 0
 
+    var filteredList = mutableStateOf<List<PokedexListEntry>>(listOf())
     var pokemonList = mutableStateOf<List<PokedexListEntry>>(listOf())
     var loadError = mutableStateOf("")
     var isLoading = mutableStateOf(false)
     var endReached = mutableStateOf(false)
+    var isSearching = false
 
     init {
         loadPokemonPaginated()
@@ -53,7 +56,8 @@ class PokemonListViewModel @Inject constructor(private val repository: PokemonRe
 
                     loadError.value = ""
                     isLoading.value = false
-                    pokemonList.value += pokedexEntries
+                    filteredList.value = pokemonList.value + pokedexEntries
+                    pokemonList.value = filteredList.value
                 }
                 is Resource.Error -> {
                     loadError.value = result.message!!
@@ -70,6 +74,24 @@ class PokemonListViewModel @Inject constructor(private val repository: PokemonRe
             palette?.dominantSwatch?.rgb?.let { colorValue ->
                 onFinish(Color(colorValue))
             }
+        }
+    }
+
+    fun filterListByKey(key: String) {
+        isSearching = key.isNotEmpty()
+        viewModelScope.launch(Dispatchers.Default) {
+            val currentList = pokemonList.value
+            if (key.isEmpty()) {
+                filteredList.value = currentList
+                return@launch
+            }
+            val filteredListLocal = currentList.filter {
+                it.pokemonName.contains(
+                    key.trim(),
+                    ignoreCase = true
+                ) || it.number.toString() == key.trim()
+            }
+            filteredList.value = filteredListLocal
         }
     }
 

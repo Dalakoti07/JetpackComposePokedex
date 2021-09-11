@@ -68,7 +68,7 @@ fun PokemonListScreen(
                     .fillMaxWidth()
                     .padding(16.dp)
             ) {
-
+                viewModel.filterListByKey(it)
             }
             Spacer(modifier = Modifier.height(16.dp))
             PokemonList(navController = navController, viewModel = viewModel)
@@ -102,7 +102,7 @@ fun SearchBar(
                 .background(Color.White, CircleShape)
                 .padding(horizontal = 20.dp, vertical = 12.dp)
                 .onFocusChanged {
-                    isHintDisplayed = !it.isFocused
+                    isHintDisplayed = !it.isFocused && text.isEmpty()
                 }
         )
         if (isHintDisplayed) {
@@ -121,7 +121,7 @@ fun PokemonList(
     viewModel: PokemonListViewModel
 ) {
 
-    val pokemonList by remember { viewModel.pokemonList }
+    val pokemonList by remember { viewModel.filteredList }
     val endReached by remember { viewModel.endReached }
     val loadError by remember { viewModel.loadError }
     val isLoading by remember { viewModel.isLoading }
@@ -133,7 +133,7 @@ fun PokemonList(
             pokemonList.size / 2 + 1
         }
         items(itemCount) {
-            if (it >= itemCount - 1 && !endReached) {
+            if (it >= itemCount - 1 && !endReached && !isLoading && !isLoading && !viewModel.isSearching) {
                 viewModel.loadPokemonPaginated()
             }
             PokedexRow(rowIndex = it, entries = pokemonList, navController = navController)
