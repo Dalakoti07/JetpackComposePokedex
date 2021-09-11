@@ -11,7 +11,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.navArgument
 import androidx.navigation.compose.rememberNavController
-import com.plcoding.jetpackcomposepokedex.pokemonDetail.PokeMonDetailViewModel
 import com.plcoding.jetpackcomposepokedex.pokemonDetail.PokemonDetailScreen
 import com.plcoding.jetpackcomposepokedex.pokemonList.PokemonListScreen
 import com.plcoding.jetpackcomposepokedex.pokemonList.PokemonListViewModel
@@ -24,10 +23,8 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
-    private val viewModel: PokemonListViewModel by viewModels()
-
     //todo find a better way to pass viewmodel to composables
-    private val detailsViewModel: PokeMonDetailViewModel by viewModels()
+    private val viewModel: PokemonListViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
