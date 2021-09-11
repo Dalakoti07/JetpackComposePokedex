@@ -1,6 +1,6 @@
 package com.plcoding.jetpackcomposepokedex.pokemonList
 
-import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,15 +9,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.Center
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
@@ -29,12 +28,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.res.ResourcesCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.ImageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.google.accompanist.coil.rememberCoilPainter
+import com.google.accompanist.imageloading.rememberDrawablePainter
 import com.plcoding.jetpackcomposepokedex.R
 import com.plcoding.jetpackcomposepokedex.data.models.PokedexListEntry
 import com.plcoding.jetpackcomposepokedex.ui.theme.RobotoCondensed
@@ -139,6 +140,22 @@ fun PokemonList(
         }
     }
 
+    Box(
+        contentAlignment = Center,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(
+                color = MaterialTheme.colors.primary
+            )
+        }
+        if (loadError.isNotEmpty()) {
+            RetrySection(error = loadError) {
+                viewModel.loadPokemonPaginated()
+            }
+        }
+    }
+
 }
 
 @Composable
@@ -153,8 +170,8 @@ fun PokedexEntry(
         mutableStateOf(defaultDominantColor)
     }
     //https://stackoverflow.com/questions/68094647/in-compose-how-to-access-drawable-once-coil-loads-image-from-url
-    var isLoadingImage by remember {
-        mutableStateOf(true)
+    var imageDrawable by remember {
+        mutableStateOf<Drawable?>(null)
     }
     Box(
         contentAlignment = Center,
@@ -190,25 +207,41 @@ fun PokedexEntry(
                 )
                 LaunchedEffect(key1 = imagePainter) {
                     launch {
-                        val result = (imageLoader.execute(imageRequest) as SuccessResult).drawable
-                        val bitmap = (result as BitmapDrawable).bitmap
-                        // do something with vibrant color
-                        viewModel.calculateDominantColor(
-                            BitmapDrawable(context.resources, bitmap)
-                        ) { color ->
-                            dominantColor = color
+                        val result = imageLoader.execute(imageRequest)
+                        if (result is SuccessResult) {
+                            val bitmap = result.drawable
+                            imageDrawable = bitmap
+                            viewModel.calculateDominantColor(
+                                bitmap
+                            ) { color ->
+                                dominantColor = color
+                            }
+                        } else {
+                            imageDrawable = ResourcesCompat.getDrawable(
+                                context.resources,
+                                R.drawable.ic_baseline_image_24,
+                                null
+                            )
                         }
                     }
                 }
-                Image(
-                    painter = rememberCoilPainter(
-                        request = imageRequest,
-                    ),
-                    contentDescription = entry.pokemonName,
-                    modifier = Modifier
-                        .align(Center)
-                        .size(120.dp),
-                )
+                if (imageDrawable != null) {
+                    Image(
+                        painter = rememberDrawablePainter(drawable = imageDrawable),
+                        contentDescription = entry.pokemonName,
+                        modifier = Modifier
+                            .align(Center)
+                            .size(120.dp),
+                    )
+                } else {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .align(Center)
+                            .size(120.dp)
+                            .scale(0.5f),
+                        color = MaterialTheme.colors.primary
+                    )
+                }
                 Text(
                     text = entry.pokemonName,
                     fontFamily = RobotoCondensed,
@@ -250,4 +283,23 @@ fun PokedexRow(
         Spacer(modifier = Modifier.height(16.dp))
     }
 
+}
+
+
+@Composable
+fun RetrySection(
+    error: String,
+    onRetry: () -> Unit
+) {
+    Column {
+        Text(
+            error,
+            color = Color.Red,
+            fontSize = 18.sp
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(onClick = { onRetry() }, modifier = Modifier.align(CenterHorizontally)) {
+            Text(text = "Retry")
+        }
+    }
 }

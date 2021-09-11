@@ -14,7 +14,6 @@ import com.plcoding.jetpackcomposepokedex.utils.Constants.PAGE_SIZE
 import com.plcoding.jetpackcomposepokedex.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import java.util.*
 import javax.inject.Inject
 
@@ -65,7 +64,6 @@ class PokemonListViewModel @Inject constructor(private val repository: PokemonRe
     }
 
     fun calculateDominantColor(drawable: Drawable, onFinish: (Color) -> Unit) {
-        Timber.d("called .... ")
         val bitmap = (drawable as BitmapDrawable).bitmap.copy(Bitmap.Config.ARGB_8888, true)
 
         Palette.from(bitmap).generate { palette ->
